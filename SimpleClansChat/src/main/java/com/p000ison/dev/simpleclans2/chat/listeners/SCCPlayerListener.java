@@ -41,7 +41,7 @@ public class SCCPlayerListener implements Listener {
         ClanPlayer clanPlayer = plugin.getClanPlayerManager().getClanPlayer(player);
         int initialRetrieversSize = event.getRecipients().size();
 
-        format = plugin.removeRetrievers(event.getRecipients(), clanPlayer, player);
+        format = plugin.removeRetrievers(event, clanPlayer, player);
 
         if (format == null) {
             if (this.plugin.getSettingsManager().isCompatibilityMode()) {

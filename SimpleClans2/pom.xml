@@ -95,7 +95,7 @@
                     <replacements>
                         <replacement>
                             <token>unknown-version</token>
-                            <value>${project.version}-b${project.build.number}</value>
+                            <value>${project.version}-ptoal-2013-04-12</value>
                         </replacement>
                     </replacements>
                 </configuration>

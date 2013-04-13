@@ -31,7 +31,6 @@ import com.p000ison.dev.simpleclans2.api.rank.Rank;
 import com.p000ison.dev.simpleclans2.chat.commands.AllyChannelCommand;
 import com.p000ison.dev.simpleclans2.chat.commands.ClanChannelCommand;
 import com.p000ison.dev.simpleclans2.chat.commands.GlobalChannelCommand;
-import com.p000ison.dev.simpleclans2.chat.listeners.SCCDepreciatedChatEvent;
 import com.p000ison.dev.simpleclans2.chat.listeners.SCCHeroChatListener;
 import com.p000ison.dev.simpleclans2.chat.listeners.SCCPlayerListener;
 import net.krinsoft.chat.ChatCore;
@@ -44,7 +43,6 @@ import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
@@ -93,11 +91,7 @@ public class SimpleClansChat extends JavaPlugin {
             pluginManager.registerEvents(new SCCHeroChatListener(this), this);
             Logging.debug("Hooked Herochat!");
         } else {
-            if (settingsManager.isDepreciationMode()) {
-                registerChatEvent(new SCCDepreciatedChatEvent(this), settingsManager.getPriority(), PlayerChatEvent.class);
-            } else {
-                registerChatEvent(new SCCPlayerListener(this), settingsManager.getPriority(), AsyncPlayerChatEvent.class);
-            }
+            registerChatEvent(new SCCPlayerListener(this), settingsManager.getPriority(), AsyncPlayerChatEvent.class);
         }
 
         core.getCommandManager().addCommand(new GlobalChannelCommand("GlobalChannel", core));
@@ -384,7 +378,9 @@ public class SimpleClansChat extends JavaPlugin {
         return ChatBlock.parseColors(format);
     }
 
-    public String removeRetrievers(Set<Player> retrievers, ClanPlayer cp, Player player) {
+    public String removeRetrievers(AsyncPlayerChatEvent event, ClanPlayer cp, Player player) {
+        Set<Player> retrievers = event.getRecipients();
+
         if (cp == null || cp.getFlags() == null) {
             return null;
         }
@@ -418,7 +414,18 @@ public class SimpleClansChat extends JavaPlugin {
                             players.remove();
                         }
                     }
+
+                    if (getSettingsManager().isCancellingMode()) {
+                        // We are going to unicast the message to clan members and then cancel the event.  This will prevent it
+                        // From being picked up by other plugins (like CraftIRC)
+                        String outMessage = String.format(format, player.getDisplayName(), event.getMessage());
+                        for (Player recipient : event.getRecipients()) {
+                            recipient.sendMessage(outMessage);
+                        }
+                        event.setCancelled(true);
+                    }
                     break;
+
                 case CLAN:
                     //format for clan
 
@@ -439,6 +446,15 @@ public class SimpleClansChat extends JavaPlugin {
                             //if global is disabled
                             players.remove();
                         }
+                    }
+                    if (getSettingsManager().isCancellingMode()) {
+                        // We are going to unicast the message to clan members and then cancel the event.  This will prevent it
+                        // From being picked up by other plugins (like CraftIRC)
+                        String outMessage = String.format(format, player.getDisplayName(), event.getMessage());
+                        for (Player recipient : event.getRecipients()) {
+                            recipient.sendMessage(outMessage);
+                        }
+                        event.setCancelled(true);
                     }
                     break;
                 case GLOBAL:
